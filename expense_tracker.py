@@ -1,9 +1,10 @@
 import json
+import os
 import datetime as dt
 import pandas as pd
 from tabulate import tabulate
 expenses = []
-total_budget = 0.0
+total_budget = None
 def show_menu():
     print("\n=============Expense Tracker=============")
     print("1. Set Total Budget")
@@ -24,9 +25,18 @@ def set_budget():
         print("Invalid amount. Please enter a valid number")
 
 def add_expenses():
+    global total_budget
+    if total_budget is None:
+        print("⚠ No budget is added. Please add a budget first from choice 1")
+        return
     try:
         category = input("Enter the category: ")
         amount = float(input("Enter the amount spent: "))
+        total_expenses = sum(exp['Amount'] for exp in expenses)
+        if total_expenses + amount > total_budget:
+            print(f"❌ Cannot add expense. It exceeds your budget")
+            print(f"Current expenses: Rs.{total_expenses:.2f}, Budget: Rs. {total_budget:.2f}")
+            return
         description = input("Enter the description: ")
         date = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -67,22 +77,26 @@ def save_txt():
     if not expenses:
         print("No expenses to save")
         return
-    with open("expenses.txt", "w") as f:
+    filename = f"{name}.txt"
+    with open(filename, "a") as f:
         for exp in expenses:
             f.write(f"{exp['Date']} | {exp['Category']} | {exp['Amount']} | {exp['Description']}")
-    print("Expenses saved to expenses.txt")
+    print(f"Expenses saved to {filename}")
 
 def save_csv():
     if not expenses:
         print("No expenses to save")
         return
+    filename = f"{name}.csv"
+    file_exists = os.path.exists(filename)
     df = pd.DataFrame(expenses)
-    df.to_csv("expenses.csv", index = False)
-    print("Expenses saved to expenses.csv")
+    df.index += 1
+    df.to_csv(filename,mode='a',header = not file_exists, index = False)
+    print(f"Expenses saved to {filename}")
 
 
 print("Welcome to the expense tracker")
-name = input("Enter your name: ")
+name = input("Enter your name: ").strip().lower()
 print(f"\n Hello, {name}. Lets see your expenses.")
 while True:
     show_menu()
